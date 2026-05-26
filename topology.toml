@@ -1,0 +1,14 @@
+"leader" = true # true - send Start() just to one; false - send Start to all
+"processes" = 8
+"connections" = [
+    [0,2],
+    [0,3],
+    [1,2],
+    [2,3],
+    [2,5],
+    [3,4],
+    [3,5],
+    [4,5],
+    [5,6],
+    [6,7]
+]
