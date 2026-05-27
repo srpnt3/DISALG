@@ -1,6 +1,5 @@
-use message_io::network::Endpoint;
 use serde::{Deserialize, Serialize};
-use crate::process::Process;
+use crate::process::{Process, ProcessID};
 
 // Process state
 #[derive(Serialize, Deserialize, Default)]
@@ -15,7 +14,8 @@ pub enum Message {
 }
 
 // Algorithm
-pub fn algorithm(_process: &mut Process, msg: (Message, Endpoint)) {
+pub fn algorithm(_process: &mut Process, msg: (Message, ProcessID)) {
+
     match msg {
         (Message::Start, _) => {
             println!("Start received")
