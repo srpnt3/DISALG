@@ -1,3 +1,6 @@
+// If you want to try it out and run it, the full project is on GitHub:
+// https://github.com/srpnt3/DISALG/tree/PROG01
+
 use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use crate::process::{Process, ProcessID};
@@ -33,9 +36,9 @@ pub enum Message {
 
 // Algorithm
 pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
-
     let id = process.id();
     match msg {
+
         (Message::Start, _) => {
             process.state.parent = id;
             process.state.expected_msgs = process.neighbours().len() as i32;
@@ -75,5 +78,6 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
                 }
             }
         }
+
     }
 }
