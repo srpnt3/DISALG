@@ -7,7 +7,7 @@ use crate::algorithm::{algorithm, Message, State};
 #[derive(Serialize, Deserialize, Debug)]
 pub enum NetMessage {
     Identify(ProcessID),
-    Ready(ProcessID, HashSet<ProcessID>),
+    Ready(ProcessID),
     Message(Message)
 }
 
@@ -24,20 +24,14 @@ impl Process {
         }
     }
 
-    /*fn try_start(&mut self, c: i32, i: i32) {
-        let l = self.neighbour_endpoints.len() as i32;
-        if self.start && c == l && i == l {
-            algorithm(self, (Message::Start, -1));
-        }
-    }*/
-
     fn try_ready(&mut self, ready: &mut HashSet<ProcessID>, c: i32, i: i32) {
         let l = self.neighbour_endpoints.len() as i32;
         if c == l && i == l {
-            println!("I'm ready!");
             ready.insert(self.id.clone());
             self.neighbour_endpoints.iter().for_each(|(_, e)| {
-                self.handler.network().send(*e, &bincode::serialize(&NetMessage::Ready(self.id, ready.clone())).unwrap());
+                ready.iter().for_each(|id| {
+                    self.handler.network().send(*e, &bincode::serialize(&NetMessage::Ready(*id)).unwrap());
+                })
             })
         }
     }
@@ -49,13 +43,10 @@ impl Process {
         let mut connected = 0;
         let mut identified = 0;
         let mut ready: HashSet<ProcessID> = HashSet::new();
-        let mut started = false;
 
         listener.for_each(move |event| match event.network() {
             NetEvent::Message(endpoint, data) => {
                 let message: NetMessage = bincode::deserialize(&data).unwrap();
-
-                //println!("Received: {:?}", message);
 
                 match message {
                     NetMessage::Identify(id) => {
@@ -63,23 +54,17 @@ impl Process {
                         identified = identified + 1;
                         self.try_ready(&mut ready, connected, identified)
                     }
-                    NetMessage::Ready(id_rec, ready_rec) => {
-                        let mut relay = false;
-                        if !ready.contains(&id_rec) { relay = true; }
+                    NetMessage::Ready(id) => {
+                        if !ready.contains(&id) {
+                            ready.insert(id);
 
-                        ready.extend(ready_rec);
-
-                        if ready.len() as i32 == num_processes {
-                            //println!("Everyone's ready!");
-                            if /*start && */!started {
-                                started = true;
-                                println!("Everyone's ready!");
+                            if (ready.len() as i32 == num_processes) && start {
+                                algorithm(&mut self, (Message::Start, -1));
+                                println!("Start() process {}", self.id);
                             }
-                        }
 
-                        if relay {
                             self.neighbour_endpoints.iter().for_each(|(_, e)| {
-                                self.handler.network().send(*e, &bincode::serialize(&NetMessage::Ready(id_rec, ready.clone())).unwrap());
+                                self.handler.network().send(*e, data);
                             });
                         }
                     }
