@@ -115,6 +115,8 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
         process.state.result = Some(n == 0 || (1..n).any(|i| uf.find(i) != uf.find(0)));
         process.state.comp_uf = Some(uf);
 
-        println!("{:?}", process.state.result);
+        if process.state.result.unwrap_or(false) {
+            println!("CUT VERTEX");
+        }
     }
 }
