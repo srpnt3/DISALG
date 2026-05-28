@@ -1,3 +1,6 @@
+// If you want to try it out and run it, the full project is on GitHub:
+// https://github.com/srpnt3/DISALG/tree/framework
+
 use serde::{Deserialize, Serialize};
 use crate::process::{Process, ProcessID};
 
@@ -14,11 +17,12 @@ pub enum Message {
 }
 
 // Algorithm
-pub fn algorithm(_process: &mut Process, msg: (Message, ProcessID)) {
-
+pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
     match msg {
+
         (Message::Start, _) => {
             println!("Start received")
         }
+
     }
 }

@@ -70,7 +70,7 @@ impl Process {
                     }
                     NetMessage::Message(message) => {
                         if let Some(process_id) = self.neighbour_ids.get(&endpoint).cloned() {
-                            println!("Received message {:?} from process {process_id}", message);
+                            //println!("Received message {:?} from process {process_id}", message);
                             algorithm(&mut self, (message, process_id));
                         } else {
                             println!("Received message from unknown endpoint {endpoint}");
@@ -89,7 +89,7 @@ impl Process {
 
     pub fn send(&self, message: Message, process_id: ProcessID) {
         if let Some(endpoint) = self.neighbour_endpoints.get(&process_id) {
-            println!("Sending message {:?} to process {process_id}", message);
+            //println!("Sending message {:?} to process {process_id}", message);
             self.handler.network().send(*endpoint, &bincode::serialize(&NetMessage::Message(message)).unwrap());
         } else {
             println!("Cannot send, did not find endpoint for process {process_id}");
