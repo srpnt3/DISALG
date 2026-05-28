@@ -57,6 +57,7 @@ fn spawn_all()/* -> Result<(), String>*/ {
             .arg(port.to_string())
             .arg(neighbours.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","))
             .arg(neighbour_ports.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","))
+            .arg(topology.processes.to_string())
             .stdout(Stdio::piped())
             .spawn()
             .unwrap();
@@ -82,17 +83,18 @@ fn spawn_individual(args: Vec<String>) -> Result<(), Error>  {
     let port = args.get(4).unwrap().parse::<i32>().unwrap();
     let neighbour_ids = args.get(5).unwrap().split(',').map(|x| x.parse().unwrap()).collect::<Vec<_>>();
     let neighbour_ports = args.get(6).unwrap().split(',').collect::<Vec<_>>();
+    let num_procs = args.get(7).unwrap().parse::<i32>().unwrap();
 
     let (handler, listener) = node::split::<()>();
 
-    let (_, _) = handler.network().listen(Transport::FramedTcp, format!("127.0.0.1:{port}"))?;
+    let (a,b) = handler.network().listen(Transport::FramedTcp, format!("127.0.0.1:{port}"))?;
 
     let neighbour_endpoints = neighbour_ports.iter()
         .map(|&port| Ok(handler.network().connect(Transport::FramedTcp, format!("127.0.0.1:{port}"))?.0))
         .collect::<Result<Vec<_>, Error>>()?;
 
-    let process = Process::new(handler, listener, id, neighbour_ids, neighbour_endpoints, start);
-    process.run();
+    let process = Process::new(handler, listener, id, neighbour_ids, neighbour_endpoints);
+    process.run(start, num_procs);
 
     Ok(())
 }

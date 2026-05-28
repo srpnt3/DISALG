@@ -2,13 +2,13 @@ use serde::{Deserialize, Serialize};
 use crate::process::{Process, ProcessID};
 
 // Process state
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct State {
 
 }
 
 // Message types
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
     Start,
 }
