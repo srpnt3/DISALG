@@ -59,8 +59,8 @@ impl Process {
                             ready.insert(id);
 
                             if (ready.len() as i32 == num_processes) && start {
-                                algorithm(&mut self, (Message::Start, -1));
                                 println!("Start() process {}", self.id);
+                                algorithm(&mut self, (Message::Start, -1));
                             }
 
                             self.neighbour_endpoints.iter().for_each(|(_, e)| {
