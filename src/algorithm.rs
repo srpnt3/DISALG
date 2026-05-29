@@ -34,21 +34,20 @@ pub enum Message {
 
 // Algorithm
 pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
-    let id = process.id();
     let n =  process.neighbours().len();
 
     if process.state.result.is_some() { return; }
 
     match msg {
         (Message::Start, _) => {
-            process.state.inf.insert(id);
-            process.state.new.insert(id);
+            process.state.inf.insert(process.id());
+            process.state.new.insert(process.id());
             process.state.comp_uf = Some(QuickUnionUf::new(n));
             process.state.com_with = HashSet::from_iter(process.neighbours().iter().cloned());
         }
 
-        (Message::MSG(set), id) => {
-            process.state.buffer.push((set, id));
+        (Message::MSG(set), x) => {
+            process.state.buffer.push((set, x));
         }
     }
 
@@ -59,7 +58,7 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
     while !process.state.new.is_empty() || process.state.round_active {
         if !process.state.round_active {
             process.state.round_active = true;
-            process.state.round = process.state.round + 1;
+            process.state.round += 1;
             process.state.com_with.iter().for_each(|&c| {
                 process.send(MSG(process.state.new.clone()), c);
             });
@@ -70,15 +69,19 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
         let mut awaiting = std::mem::take(&mut process.state.awaiting);
         let r = process.state.round;
 
-        awaiting.retain(|&i| {
+        awaiting.retain(|&x| {
             let Some((new, x)) = process.state.buffer.iter()
-                .position(|&(_, j)| i == j)
+                .position(|&(_, i)| x == i)
                 .map(|i| process.state.buffer.remove(i)) else {
                 return true;
             };
             if new.is_empty() { process.state.com_with.remove(&x); return false; }
 
-            let aux: HashSet<ProcessID> = new.difference(&process.state.inf.union(&process.state.new).cloned().collect()).cloned().collect();
+            let aux: Vec<_> = new.iter()
+                .filter(|i| !process.state.inf.contains(i) && !process.state.new.contains(i))
+                .cloned()
+                .collect();
+
             new.iter().for_each(|&id| {
                 if !process.state.inf.contains(&id) && !process.state.new.contains(&id) {
                     process.state.routing_to.insert(id, x);
@@ -96,27 +99,25 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
 
             false
         });
-        process.state.awaiting = awaiting;
+        process.state.awaiting = awaiting; // put back in place
 
-        if process.state.awaiting.is_empty() {
-            process.state.inf.extend(process.state.new.clone());
-            process.state.round_active = false;
-        } else {
-            process.state.comp_uf = Some(uf);
+        if !process.state.awaiting.is_empty() {
+            process.state.comp_uf = Some(uf); // put back in place
             return;
         }
+
+        process.state.inf.extend(process.state.new.iter().cloned());
+        process.state.round_active = false;
     }
 
-    if !process.state.round_active {
-        process.state.com_with.iter().for_each(|&c| {
-            process.send(MSG(process.state.new.clone()), c);
-        });
+    process.state.com_with.iter().for_each(|&c| {
+        process.send(MSG(HashSet::new()), c);
+    });
 
-        process.state.result = Some(n == 0 || (1..n).any(|i| uf.find(i) != uf.find(0)));
-        process.state.comp_uf = Some(uf);
+    process.state.result = Some(n == 0 || (1..n).any(|i| uf.find(i) != uf.find(0)));
+    process.state.comp_uf = Some(uf); // put back in place
 
-        if process.state.result.unwrap_or(false) {
-            println!("CUT VERTEX");
-        }
+    if process.state.result.unwrap_or(false) {
+        println!("CUT VERTEX");
     }
 }

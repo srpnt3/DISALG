@@ -59,7 +59,7 @@ impl Process {
                             ready.insert(id);
 
                             if (ready.len() as i32 == num_processes) && start {
-                                println!("Start() process {}", self.id);
+                                //println!("Start() process {}", self.id);
                                 algorithm(&mut self, (Message::Start, -1));
                             }
 
