@@ -25,7 +25,7 @@ pub enum Message {
 
     Start,
     StGo(),
-    StBack(bool),
+    StBack(),
 }
 
 // like acquire but without waiting, instead we get notified
@@ -55,7 +55,6 @@ pub fn received_object(process: &mut Process) {
     let object = process.state.object.take().unwrap();
     println!("Received object: {}", object);
     process.state.object = Some(object);
-
 }
 
 // Algorithm
@@ -96,7 +95,7 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
             }
         }
 
-// Anything below is not relevant
+        // Below is for spanning tree
         (Message::Start, _) => {
             process.state.parent = Some(process.id());
             process.state.st_expected = process.neighbours().len();
@@ -115,14 +114,13 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
                     });
                 }
                 Some(_) => {
-                    process.send(Message::StBack(false), p_j);
+                    process.send(Message::StBack(), p_j);
                 }
             }
             st_local_term(process);
         }
-        (Message::StBack(b), p_j) => {
+        (Message::StBack(), _) => {
             process.state.st_expected -= 1;
-            //if b { process.state.children.push(p_j); }
             st_local_term(process);
         }
     }
@@ -131,7 +129,7 @@ pub fn algorithm(process: &mut Process, msg: (Message, ProcessID)) {
 pub fn st_local_term(process: &mut Process) {
     if process.state.st_expected == 0 {
         if let Some(p) = process.state.parent && p != process.id() {
-            process.send(Message::StBack(true), p);
+            process.send(Message::StBack(), p);
         } else {
             algorithm(process, (Message::RaymondStart(), 0));
         }
