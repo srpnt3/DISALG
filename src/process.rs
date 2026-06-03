@@ -8,6 +8,7 @@ use crate::algorithm::{algorithm, Message, State};
 pub enum NetMessage {
     Identify(ProcessID),
     Ready(ProcessID),
+    External(String),
     Message(Message)
 }
 
@@ -60,7 +61,6 @@ impl Process {
 
                             if (ready.len() as i32 == num_processes) && start {
                                 algorithm(&mut self, (Message::Start, -1));
-                                println!("Start() process {}", self.id);
                             }
 
                             self.neighbour_endpoints.iter().for_each(|(_, e)| {
@@ -70,10 +70,19 @@ impl Process {
                     }
                     NetMessage::Message(message) => {
                         if let Some(process_id) = self.neighbour_ids.get(&endpoint).cloned() {
-                            //println!("Received message {:?} from process {process_id}", message);
                             algorithm(&mut self, (message, process_id));
                         } else {
                             println!("Received message from unknown endpoint {endpoint}");
+                        }
+                    },
+                    NetMessage::External(message) => {
+                        match message.as_str() {
+                            "quit" => {
+                                self.handler.stop();
+                            }
+                            _ => {
+                                
+                            }
                         }
                     }
                 }
@@ -89,7 +98,6 @@ impl Process {
 
     pub fn send(&self, message: Message, process_id: ProcessID) {
         if let Some(endpoint) = self.neighbour_endpoints.get(&process_id) {
-            //println!("Sending message {:?} to process {process_id}", message);
             self.handler.network().send(*endpoint, &bincode::serialize(&NetMessage::Message(message)).unwrap());
         } else {
             println!("Cannot send, did not find endpoint for process {process_id}");

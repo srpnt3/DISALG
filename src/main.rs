@@ -1,14 +1,17 @@
 mod process;
 mod algorithm;
 
-use std::io::{BufRead, BufReader, Error};
+use std::collections::{HashMap, VecDeque};
+use std::io::{BufRead, BufReader, Error, stdin};
 use std::process::{Command, Stdio};
+use std::thread::sleep;
+use std::time::Duration;
 use config::Config;
 use message_io::network::Transport;
 use rand::prelude::SliceRandom;
 use message_io::node::{self};
 use serde::Deserialize;
-use crate::process::Process;
+use crate::process::{NetMessage, Process};
 
 #[derive(Deserialize, Debug)]
 struct TopologyConfig {
@@ -70,6 +73,45 @@ fn spawn_all()/* -> Result<(), String>*/ {
         });
 
         children.push(child);
+    }
+
+    let (handler, listener) = node::split::<()>();
+    let (a, b) = handler.network().listen(Transport::FramedTcp, "127.0.0.1:0".to_string()).unwrap();
+
+    let endpoints = ports.iter().enumerate().map(|(i, p)|
+        (i, handler.network().connect(Transport::FramedTcp, format!("127.0.0.1:{p}")).unwrap().0)
+    ).collect::<HashMap<_, _>>();
+
+    sleep(Duration::from_millis(1000));
+    println!("Start typing commands");
+    println!("Usage: quit | send <id> <msg>");
+
+    let mut running = true;
+    while running {
+        let mut input = String::new();
+        stdin().read_line(&mut input).expect("");
+        let input = input.trim();
+        let mut args = input.split_whitespace().collect::<VecDeque<_>>();
+        match args.pop_front().unwrap_or("") {
+            "quit" => {
+                running = false;
+                endpoints.iter().for_each(|(_, &e)| {
+                    handler.network().send(e, &bincode::serialize(&NetMessage::External("quit".to_string())).unwrap());
+                })
+            }
+            "send" => {
+                let id: Option<usize> = args.pop_front().and_then(|x| x.parse().ok());
+                let msg = args.pop_front();
+                if let Some(&e) = id.and_then(|id| endpoints.get(&id)) && let Some(msg) = msg {
+                    handler.network().send(e, &bincode::serialize(&NetMessage::External(msg.to_string())).unwrap());
+                } else {
+                    println!("Usage: quit | send <id> <msg>");
+                }
+            }
+            _ => {
+                println!("Usage: quit | send <id> <msg>");
+            }
+        }
     }
 
     for mut c in children {
