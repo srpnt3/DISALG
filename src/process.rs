@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use message_io::network::{Endpoint, NetEvent, ResourceId};
 use message_io::node::{NodeHandler, NodeListener};
 use serde::{Deserialize, Serialize};
-use crate::algorithm::{algorithm, Message, State};
+use crate::algorithm::{algorithm, release_object, request_object, Message, State};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum NetMessage {
@@ -79,6 +79,14 @@ impl Process {
                         match message.as_str() {
                             "quit" => {
                                 self.handler.stop();
+                            }
+                            "req" => {
+                                println!("requesting object");
+                                request_object(&mut self);
+                            }
+                            "rel" => {
+                                println!("releasing object");
+                                release_object(&mut self);
                             }
                             _ => {
                                 
